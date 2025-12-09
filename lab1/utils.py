@@ -39,6 +39,7 @@ def get_beg_end(line, size):
 
 
 def plot_img(img, do_not_use=[0]):
-    plt.figure(do_not_use[0])
+    plt.figure(do_not_use[0], frameon=False)
     do_not_use[0] += 1
+    plt.axis('off') 
     plt.imshow(img)
