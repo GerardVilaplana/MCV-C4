@@ -26,11 +26,58 @@ def get_transformed_pixels_coords(I, H, shift=None):
     return cart_H.reshape((*I.shape[:2], 2))
 
 def apply_H_fixed_image_size(I, H, corners):
+    # Fixed canvas
+    xmin, xmax, ymin, ymax = corners
+    out_w = int(xmax - xmin + 1)
+    out_h = int(ymax - ymin + 1)
 
-    # ToDo: complete this code .......
-    return
+    # Build a grid containing all pixel coordinates of the output canvas
+    xx, yy = np.meshgrid(
+        np.arange(xmin, xmax + 1),
+        np.arange(ymin, ymax + 1)
+    )
+
+    pts_out = np.vstack([
+        xx.ravel(),
+        yy.ravel(),
+        np.ones(xx.size)
+    ])
+
+    # Get inverse warp of all pixels
+    H_inv = np.linalg.inv(H)
+    src = H_inv @ pts_out
+    src /= src[2]
+
+    x_src = src[0].reshape(out_h, out_w)
+    y_src = src[1].reshape(out_h, out_w)
+
+    coords = [y_src.ravel(), x_src.ravel()]
+
+    if I.ndim == 2:
+        # Grayscale
+        out = map_coordinates(
+            I,
+            coords,
+            order=1, # Bilinear
+            mode='constant',
+            cval=0
+        ).reshape(out_h, out_w)
+    else:
+        # 3 channel
+        channels = []
+        for c in range(I.shape[2]):
+            ch = map_coordinates(
+                I[:, :, c],
+                coords,
+                order=1,
+                mode='constant',
+                cval=0
+            ).reshape(out_h, out_w)
+            channels.append(ch)
+        out = np.stack(channels, axis=2)
+
+    return out
     
-
 def Normalise_last_coord(x):
     xn = x  / x[2,:]
     
